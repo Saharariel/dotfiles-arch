@@ -34,7 +34,13 @@ echo "==> Applying chezmoi config..."
 chezmoi init --apply "git@github.com:Saharariel/dotfiles-arch.git"
 
 # -------------------------------------- #
-# 📦 Install system packages from packages.aur
+# 📦 Install system packages from packages.lst
+# -------------------------------------- #
+echo "==> Installing additional system packages..."
+./install_pkg.sh
+
+# -------------------------------------- #
+# 📦 Install AUR packages from packages.aur (optional)
 # -------------------------------------- #
 PKG_FILE="packages.aur"
 if [[ -r "$PKG_FILE" ]]; then
@@ -46,7 +52,7 @@ if [[ -r "$PKG_FILE" ]]; then
     echo "ℹ️ Package list is empty."
   fi
 else
-  echo "❌ packages.aur file not found!"
+  echo "ℹ️ Skipping AUR: no packages.aur file found."
 fi
 
 # -------------------------------------- #
