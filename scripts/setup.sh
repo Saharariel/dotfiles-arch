@@ -1,8 +1,23 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
 
 echo "==> Bootstrapping Arch setup..."
+
+# -------------------------------------- #
+# 💥 Add Chaotic-AUR repository
+# -------------------------------------- #
+echo "==> Adding Chaotic-AUR..."
+
+sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
+sudo pacman-key --lsign-key 3056513887B78AEB
+sudo pacman -U --noconfirm https://cdn.aur.chaotic.cx/chaotic-keyring.pkg.tar.zst
+sudo pacman -U --noconfirm https://cdn.aur.chaotic.cx/chaotic-mirrorlist.pkg.tar.zst
+
+if ! grep -q "\[chaotic-aur\]" /etc/pacman.conf; then
+  echo -e "\n[chaotic-aur]\nInclude = /etc/pacman.d/chaotic-mirrorlist" | sudo tee -a /etc/pacman.conf
+fi
+
+sudo pacman -Sy
 
 # -------------------------------------- #
 # 🧱 Base Packages
@@ -17,43 +32,16 @@ sudo pacman -Syu --needed --noconfirm \
   chezmoi
 
 # -------------------------------------- #
-# 🛠 Install yay (AUR helper)
-# -------------------------------------- #
-if ! command -v yay &>/dev/null; then
-  echo "==> Installing yay..."
-  tmpdir=$(mktemp -d)
-  git clone https://aur.archlinux.org/yay.git "$tmpdir"
-  (cd "$tmpdir" && makepkg -si --noconfirm)
-  rm -rf "$tmpdir"
-fi
-
-# -------------------------------------- #
 # 📁 Dotfiles via chezmoi
 # -------------------------------------- #
 echo "==> Applying chezmoi config..."
-chezmoi init --apply "git@github.com:Saharariel/dotfiles-arch.git"
+chezmoi init --apply "https://github.com/Saharariel/dotfiles-arch.git"
 
 # -------------------------------------- #
 # 📦 Install system packages from packages.lst
 # -------------------------------------- #
 echo "==> Installing additional system packages..."
 ./install_pkg.sh
-
-# -------------------------------------- #
-# 📦 Install AUR packages from packages.aur (optional)
-# -------------------------------------- #
-PKG_FILE="packages.aur"
-if [[ -r "$PKG_FILE" ]]; then
-  mapfile -t packages < <(grep -vE '^\s*#|^$' "$PKG_FILE")
-  if [[ ${#packages[@]} -gt 0 ]]; then
-    echo "==> Installing AUR packages with yay..."
-    yay -S --needed --noconfirm "${packages[@]}"
-  else
-    echo "ℹ️ Package list is empty."
-  fi
-else
-  echo "ℹ️ Skipping AUR: no packages.aur file found."
-fi
 
 # -------------------------------------- #
 # 🐚 Set zsh as default shell
